@@ -1,0 +1,132 @@
+# This code is part of Qiskit.
+#
+# (C) Copyright IBM 2020.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+name: Aqua Tutorials Runner
+
+on:
+  push:
+    branches:
+      - master
+      - 'stable/**'
+  pull_request:
+    branches:
+      - master
+      - 'stable/**'
+
+jobs:
+  Community-Tutorials-Aqua:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: ./.github/actions/install-libraries
+      - uses: ./.github/actions/install-master-dependencies
+        if: ${{ !startsWith(github.ref, 'refs/heads/stable') }}
+      - uses: ./.github/actions/install-dependencies
+        with:
+          use-master: ${{ !startsWith(github.ref, 'refs/heads/stable') }}
+          python-version: ${{ matrix.python-version }}
+      - name: Run Aqua Community Tutorials
+        run: |
+          git clone https://github.com/manoelmarques/qiskit-tutorials
+          git clone https://github.com/manoelmarques/qiskit-community-tutorials 
+          cd qiskit-community-tutorials
+          git checkout aqua0.8
+          cp ../conf.py conf.py
+          cp -r ../qiskit-tutorials/_static/ _static/
+          cp -r ../qiskit-tutorials/_templates/ _templates/
+          cp -r ../qiskit-tutorials/images/ images/
+          rm -r Coding_With_Qiskit/
+          rm -r Cryptography/
+          rm -r aer/
+          rm -r algorithms/
+          rm -r awards/
+          rm -r chemistry/
+          rm -r creative/
+          rm -r exercises/
+          rm -r games/
+          rm -r hello_world/
+          rm -r ignis/
+          rm -r qiskit_advocates/
+          rm -r terra/
+          sphinx-build -b html . _build/html
+          tar -zcvf ../community_tutorials_aqua.tar.gz _build/html
+        shell: bash
+      - name: Run upload tutorials
+        uses: actions/upload-artifact@v2
+        with:
+          name: community-tutorials-aqua${{ matrix.python-version }}
+          path: ./community_tutorials_aqua.tar.gz
+  Community-Tutorials-Chemistry:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: ./.github/actions/install-psi4
+        if: ${{ matrix.python-version == 3.7 }}
+      - uses: ./.github/actions/install-libraries
+      - uses: ./.github/actions/install-master-dependencies
+        if: ${{ !startsWith(github.ref, 'refs/heads/stable') }}
+      - uses: ./.github/actions/install-dependencies
+        with:
+          use-master: ${{ !startsWith(github.ref, 'refs/heads/stable') }}
+          python-version: ${{ matrix.python-version }}
+      - name: Run Aqua Community Tutorials
+        env:
+          OPENBLAS_NUM_THREADS: 1
+        run: |
+          if [ -f "$HOME/miniconda/etc/profile.d/conda.sh" ]; then
+            source "$HOME/miniconda/etc/profile.d/conda.sh"
+            conda activate
+            # PSI4 has problems with dataclasses
+            pip uninstall -y dataclasses
+          fi
+          git clone https://github.com/manoelmarques/qiskit-tutorials
+          git clone https://github.com/manoelmarques/qiskit-community-tutorials 
+          cd qiskit-community-tutorials
+          git checkout aqua0.8
+          cp ../conf.py conf.py
+          cp -r ../qiskit-tutorials/_static/ _static/
+          cp -r ../qiskit-tutorials/_templates/ _templates/
+          cp -r ../qiskit-tutorials/images/ images/
+          rm -r Coding_With_Qiskit/
+          rm -r Cryptography/
+          rm -r aer/
+          rm -r algorithms/
+          rm -r aqua/
+          rm -r awards/
+          rm chemistry/h2_var_forms.ipynb
+          rm -r creative/
+          rm -r exercises/
+          rm -r games/
+          rm -r hello_world/
+          rm -r ignis/
+          rm -r qiskit_advocates/
+          rm -r terra/
+          sphinx-build -b html . _build/html
+          tar -zcvf ../community_tutorials_chemistry.tar.gz _build/html
+        shell: bash
+      - name: Run upload tutorials
+        uses: actions/upload-artifact@v2
+        with:
+          name: community-tutorials-chemistry${{ matrix.python-version }}
+          path: ./community_tutorials_chemistry.tar.gz

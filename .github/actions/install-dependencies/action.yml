@@ -1,0 +1,53 @@
+# This code is part of Qiskit.
+#
+# (C) Copyright IBM 2020.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# Any modifications or derivative works of this code must retain this
+# copyright notice, and modified files need to carry a notice indicating
+# that they have been altered from the originals.
+
+name: 'Install Dependencies'
+description: 'Installs Aqua & Dependencies'
+inputs:
+  use-master:
+    description: 'Use master'
+    required: true
+  python-version:
+    description: 'Python version'
+    required: true
+runs:
+  using: "composite"
+  steps: 
+    - run : |
+        if [ -f "$HOME/miniconda/etc/profile.d/conda.sh" ]; then
+            source "$HOME/miniconda/etc/profile.d/conda.sh"
+            conda activate
+        fi
+        git clone https://github.com/Qiskit/qiskit-aqua
+        cd qiskit-aqua
+        if [ "${{ inputs.use-master }}" == "true" ]; then
+            pip install -e .
+        else
+            pip install qiskit-aqua
+        fi
+        pip install -U -c constraints.txt -r requirements-dev.txt
+        # sudo apt-get -y update
+        sudo apt-get -y install libgfortran5
+        sudo apt-get -y install texlive-latex-base
+        sudo apt-get -y install texlive-fonts-recommended
+        sudo apt-get -y install texlive-fonts-extra
+        sudo apt-get -y install texlive-latex-extra
+        sudo apt-get -y install poppler-utils
+        pip install https://github.com/rpmuller/pyquante2/archive/master.zip
+        pip install pyscf
+        pip install "cvxpy>1.0.0"
+        pip install -U jupyter sphinx nbsphinx sphinx_rtd_theme 'matplotlib<3.3.0' qiskit-terra[visualization] cvxpy
+        sudo apt-get install -y pandoc graphviz
+        if [ ${{ inputs.python-version }} == 3.7 ]; then
+            pip install cplex
+        fi
+      shell: bash
